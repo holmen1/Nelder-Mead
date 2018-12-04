@@ -42,11 +42,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Common\Vector.cs" />
     <Compile Include="NelderMeadSimplex\NelderMeadSimplex.cs" />
-    <Compile Include="NelderMeadSimplex\RegressionResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="NelderMeadSimplex\SimplexConstant.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

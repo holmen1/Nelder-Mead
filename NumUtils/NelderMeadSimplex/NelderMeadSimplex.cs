@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-using NumUtils.Common;
+//using NumUtils.Common;
 
-namespace NumUtils.NelderMeadSimplex
+namespace RUT.NelderMeadSimplex
 {
     public delegate double ObjectiveFunctionDelegate(double[] constants, double[] tt, double[] Y);
 
@@ -34,7 +34,7 @@ namespace NumUtils.NelderMeadSimplex
 
             errorValues = _initializeErrorValues(vertices, objectiveFunction, tt, Y);
 
-            // iterate until we converge, or complete our permitt, Yed number of iterations
+            // iterate until we converge, or complete our permitted number of iterations
             while (true)
             {
                errorProfile = _evaluateSimplex(errorValues);
@@ -290,5 +290,185 @@ namespace NumUtils.NelderMeadSimplex
                 set { _lowestIndex = value; }
             }
         }
+    }
+
+
+    public class Vector
+    {
+        private double[] _components;
+        private int _nDimensions;
+        public Vector(int dimensions)
+        {
+            _components = new double[dimensions];
+            _nDimensions = dimensions;
+        }
+
+        public int NDimensions
+        {
+            get { return _nDimensions; }
+        }
+
+        public double this[int index]
+        {
+            get { return _components[index]; }
+            set { _components[index] = value; }
+        }
+
+        public double[] Components
+        {
+            get { return _components; }
+        }
+
+        /// <summary>
+        /// Add another vector to this one
+        /// </summary>
+        /// <param name="v"></param>
+        /// <returns></returns>
+        public Vector Add(Vector v)
+        {
+            if (v.NDimensions != this.NDimensions)
+                throw new ArgumentException("Can only add vectors of the same dimensionality");
+
+            Vector vector = new Vector(v.NDimensions);
+            for (int i = 0; i < v.NDimensions; i++)
+            {
+                vector[i] = this[i] + v[i];
+            }
+            return vector;
+        }
+
+        /// <summary>
+        /// Subtract another vector from this one
+        /// </summary>
+        /// <param name="v"></param>
+        /// <returns></returns>
+        public Vector Subtract(Vector v)
+        {
+            if (v.NDimensions != this.NDimensions)
+                throw new ArgumentException("Can only subtract vectors of the same dimensionality");
+
+            Vector vector = new Vector(v.NDimensions);
+            for (int i = 0; i < v.NDimensions; i++)
+            {
+                vector[i] = this[i] - v[i];
+            }
+            return vector;
+        }
+
+        /// <summary>
+        /// Multiply this vector by a scalar value
+        /// </summary>
+        /// <param name="scalar"></param>
+        /// <returns></returns>
+        public Vector Multiply(double scalar)
+        {
+            Vector scaledVector = new Vector(this.NDimensions);
+            for (int i = 0; i < this.NDimensions; i++)
+            {
+                scaledVector[i] = this[i] * scalar;
+            }
+            return scaledVector;
+        }
+
+        /// <summary>
+        /// Compute the dot product of this vector and the given vector
+        /// </summary>
+        /// <param name="v"></param>
+        /// <returns></returns>
+        public double DotProduct(Vector v)
+        {
+            if (v.NDimensions != this.NDimensions)
+                throw new ArgumentException("Can only compute dot product for vectors of the same dimensionality");
+
+            double sum = 0;
+            for (int i = 0; i < v.NDimensions; i++)
+            {
+                sum += this[i] * v[i];
+            }
+            return sum;
+        }
+
+        public override string ToString()
+        {
+            string[] components = new string[_components.Length];
+            for (int i = 0; i < components.Length; i++)
+            {
+                components[i] = _components[i].ToString();
+            }
+            return "[ " + string.Join(", ", components) + " ]";
+        }
+    }
+
+
+    public sealed class SimplexConstant
+    {
+        private double _value;
+        private double _initialPerturbation;
+
+        public SimplexConstant(double value, double initialPerturbation)
+        {
+            _value = value;
+            _initialPerturbation = initialPerturbation;
+        }
+
+        /// <summary>
+        /// The value of the constant
+        /// </summary>
+        public double Value
+        {
+            get { return _value; }
+            set { _value = value; }
+        }
+
+        // The size of the initial perturbation
+        public double InitialPerturbation
+        {
+            get { return _initialPerturbation; }
+            set { _initialPerturbation = value; }
+        }
+    }
+
+
+    public sealed class RegressionResult
+    {
+        private TerminationReason _terminationReason;
+        private double[] _constants;
+        private double _errorValue;
+        private int _evaluationCount;
+
+        public RegressionResult(TerminationReason terminationReason, double[] constants, double errorValue, int evaluationCount)
+        {
+            _terminationReason = terminationReason;
+            _constants = constants;
+            _errorValue = errorValue;
+            _evaluationCount = evaluationCount;
+        }
+
+        public TerminationReason TerminationReason
+        {
+            get { return _terminationReason; }
+        }
+
+        public double[] Constants
+        {
+            get { return _constants; }
+        }
+
+        public double ErrorValue
+        {
+            get { return _errorValue; }
+        }
+
+        public int EvaluationCount
+        {
+            get { return _evaluationCount; }
+        }
+    }
+
+    public enum TerminationReason
+    {
+        MaxFunctionEvaluations,
+        Converged,
+        Unspecified
     }
 }

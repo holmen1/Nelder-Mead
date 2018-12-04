@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Reflection;
 
-using NumUtils.NelderMeadSimplex;
+using RUT.NelderMeadSimplex;
 
 namespace NumUtilsTests
 {
