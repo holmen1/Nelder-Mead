@@ -6,13 +6,13 @@ using NumUtils.Common;
 
 namespace NumUtils.NelderMeadSimplex
 {
-    public delegate double ObjectiveFunctionDelegate(double[] constants);
+    public delegate double ObjectiveFunctionDelegate(double[] constants, double[] tt);
 
     public sealed class NelderMeadSimplex
     {
         private static readonly double JITTER = 1e-10d;           // a small value used to protect against floating point noise
 
-        public static RegressionResult Regress(SimplexConstant[] simplexConstants, double convergenceTolerance, int maxEvaluations, 
+        public static RegressionResult Regress(SimplexConstant[] simplexConstants, double[] tt, double convergenceTolerance, int maxEvaluations, 
                                         ObjectiveFunctionDelegate objectiveFunction)
         {
             // confirm that we are in a position to commence
@@ -32,7 +32,7 @@ namespace NumUtils.NelderMeadSimplex
             TerminationReason terminationReason = TerminationReason.Unspecified;
             ErrorProfile errorProfile;
 
-            errorValues = _initializeErrorValues(vertices, objectiveFunction);
+            errorValues = _initializeErrorValues(vertices, objectiveFunction, tt);
 
             // iterate until we converge, or complete our permitted number of iterations
             while (true)
@@ -47,12 +47,12 @@ namespace NumUtils.NelderMeadSimplex
                 }
 
                 // attempt a reflection of the simplex
-                double reflectionPointValue = _tryToScaleSimplex(-1.0, ref errorProfile, vertices, errorValues, objectiveFunction);
+                double reflectionPointValue = _tryToScaleSimplex(-1.0, ref errorProfile, vertices, errorValues, objectiveFunction, tt);
                 ++evaluationCount;
                 if (reflectionPointValue <= errorValues[errorProfile.LowestIndex])
                 {
                     // it's better than the best point, so attempt an expansion of the simplex
-                    double expansionPointValue = _tryToScaleSimplex(2.0, ref errorProfile, vertices, errorValues, objectiveFunction);
+                    double expansionPointValue = _tryToScaleSimplex(2.0, ref errorProfile, vertices, errorValues, objectiveFunction, tt);
                     ++evaluationCount;
                 }
                 else if (reflectionPointValue >= errorValues[errorProfile.NextHighestIndex])
@@ -60,14 +60,14 @@ namespace NumUtils.NelderMeadSimplex
                     // it would be worse than the second best point, so attempt a contraction to look
                     // for an intermediate point
                     double currentWorst = errorValues[errorProfile.HighestIndex];
-                    double contractionPointValue = _tryToScaleSimplex(0.5, ref errorProfile, vertices, errorValues, objectiveFunction);
+                    double contractionPointValue = _tryToScaleSimplex(0.5, ref errorProfile, vertices, errorValues, objectiveFunction, tt);
                     ++evaluationCount;
                     if (contractionPointValue >= currentWorst)
                     {
                         // that would be even worse, so let's try to contract uniformly towards the low point; 
                         // don't bother to update the error profile, we'll do it at the start of the
                         // next iteration
-                        _shrinkSimplex(errorProfile, vertices, errorValues, objectiveFunction);
+                        _shrinkSimplex(errorProfile, vertices, errorValues, objectiveFunction, tt);
                         evaluationCount += numVertices; // that required one function evaluation for each vertex; keep track
                     }
                 }
@@ -89,12 +89,12 @@ namespace NumUtils.NelderMeadSimplex
         /// </summary>
         /// <param name="vertices"></param>
         /// <returns></returns>
-        private static double[] _initializeErrorValues(Vector[] vertices, ObjectiveFunctionDelegate objectiveFunction)
+        private static double[] _initializeErrorValues(Vector[] vertices, ObjectiveFunctionDelegate objectiveFunction, double[] tt)
         {
             double[] errorValues = new double[vertices.Length];
             for (int i = 0; i < vertices.Length; i++)
             {
-                errorValues[i] = objectiveFunction(vertices[i].Components);
+                errorValues[i] = objectiveFunction(vertices[i].Components, tt);
             }
             return errorValues;
         }
@@ -201,7 +201,7 @@ namespace NumUtils.NelderMeadSimplex
         /// <param name="errorValues"></param>
         /// <returns></returns>
         private static double _tryToScaleSimplex(double scaleFactor, ref ErrorProfile errorProfile, Vector[] vertices, 
-                                          double[] errorValues, ObjectiveFunctionDelegate objectiveFunction)
+                                          double[] errorValues, ObjectiveFunctionDelegate objectiveFunction, double[] tt)
         {
             // find the centroid through which we will reflect
             Vector centroid = _computeCentroid(vertices, errorProfile);
@@ -213,7 +213,7 @@ namespace NumUtils.NelderMeadSimplex
             Vector newPoint = centroidToHighPoint.Multiply(scaleFactor).Add(centroid);
 
             // evaluate the new point
-            double newErrorValue = objectiveFunction(newPoint.Components);
+            double newErrorValue = objectiveFunction(newPoint.Components, tt);
 
             // if it's better, replace the old high point
             if (newErrorValue < errorValues[errorProfile.HighestIndex])
@@ -232,7 +232,7 @@ namespace NumUtils.NelderMeadSimplex
         /// <param name="vertices"></param>
         /// <param name="errorValues"></param>
         private static void _shrinkSimplex(ErrorProfile errorProfile, Vector[] vertices, double[] errorValues, 
-                                      ObjectiveFunctionDelegate objectiveFunction)
+                                      ObjectiveFunctionDelegate objectiveFunction, double[] tt)
         {
             Vector lowestVertex = vertices[errorProfile.LowestIndex];
             for (int i = 0; i < vertices.Length; i++)
@@ -240,7 +240,7 @@ namespace NumUtils.NelderMeadSimplex
                 if (i != errorProfile.LowestIndex)
                 {
                     vertices[i] = (vertices[i].Add(lowestVertex)).Multiply(0.5);
-                    errorValues[i] = objectiveFunction(vertices[i].Components);
+                    errorValues[i] = objectiveFunction(vertices[i].Components, tt);
                 }
             }
         }
